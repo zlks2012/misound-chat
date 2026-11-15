@@ -20,8 +20,25 @@
 - 房主控制在线电台的播放、暂停、上一台、下一台和音源切换。
 - 所有成员可调整自己浏览器里的电台音量。
 - 管理员和隐身进房控制仅对配置的授权 IP 显示，服务端同时校验来源 IP。
+
 - HTTP 自动跳转 HTTPS，WebSocket 使用 `wss://`。
 - 通过 SNI 支持多个域名的 HTTPS 证书。
+
+
+<img width="1102" height="1163" alt="QQ_2026-11-15_23-05-23" src="https://github.com/user-attachments/assets/2f401752-a2f3-46d1-93ad-2edbc4eb9965" />
+
+<img width="732" height="968" alt="QQ_2026-11-15_23-05-34" src="https://github.com/user-attachments/assets/32c9be0c-c00e-4fbf-8393-7559d5321d9a" />
+
+<img width="633" height="953" alt="QQ_2026-11-15_23-05-42" src="https://github.com/user-attachments/assets/9a67eab4-775a-4f34-84b4-8da141a789fc" />
+
+
+
+<img width="647" height="958" alt="QQ_2026-11-15_23-06-01" src="https://github.com/user-attachments/assets/27de4025-0750-48d9-ad00-b8bb3ce01a8b" />
+
+
+<img width="753" height="989" alt="QQ_2026-11-15_23-06-08" src="https://github.com/user-attachments/assets/cd057f2c-a13a-447f-8a62-abe35b0fcb1d" />
+
+
 
 ## 项目结构
 
