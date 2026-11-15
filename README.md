@@ -148,6 +148,23 @@ const OWNER_IP = '你的IP';
 - 隐私文案为产品草案，正式上线前建议由法务确认。
 - 管理员 IP 白名单是轻量授权方案，不适合复杂多管理员场景。
 
+
+
+
+
+
+
+
+
+第一个包现在在这里：
+
+misound-chat-v1.0.0-source.zip
+
+包包含完整公开源码、聊天页、主页、设计资产和多语言文档，大小约 2.7 MB。我已验证下载返回 200。
+
+Release 页面：
+
+https://github.com/zlks2012/misound-chat/releases/tag/v1.0.0
 ## License
 
 MIT
