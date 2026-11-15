@@ -1,0 +1,9 @@
+certs/
+*.pem
+*.key
+site-home/assets/owner-marker.txt
+deliverables/*.zip
+.workbuddy/
+node_modules/
+.DS_Store
+Thumbs.db

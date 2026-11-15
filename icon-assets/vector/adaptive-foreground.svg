@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" fill="none">
+  <defs>
+    <linearGradient id="mgr" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3AC9F5"/>
+      <stop offset="0.55" stop-color="#7B8DF0"/>
+      <stop offset="1" stop-color="#FF5FA8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="54" cy="54" r="31" stroke="#6C7BE0" stroke-opacity="0.45" stroke-width="0.7"/>
+  <path d="M83 54 74.5 74.5 54 83 33.5 74.5 25 54 33.5 33.5 54 25 74.5 33.5Z" stroke="#6C7BE0" stroke-opacity="0.40" stroke-width="0.7"/>
+  <path d="M25 54 54 25M83 54 54 83" stroke="#6C7BE0" stroke-opacity="0.22" stroke-width="0.6"/>
+  <circle cx="25" cy="54" r="2.0" fill="#3AC9F5"/>
+  <circle cx="83" cy="54" r="2.0" fill="#FF5FA8"/>
+  <circle cx="54" cy="25" r="1.6" fill="#5BE0A8"/>
+  <circle cx="54" cy="83" r="1.6" fill="#F6B45A"/>
+  <circle cx="74.5" cy="33.5" r="1.2" fill="#3AC9F5"/>
+  <circle cx="33.5" cy="74.5" r="1.2" fill="#FF5FA8"/>
+  <path d="M38 72V40l16 18 16-18v32" stroke="url(#mgr)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

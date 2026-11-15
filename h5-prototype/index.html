@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B0E22">
+<title>觅声 MISOUND · 点开即聊</title>
+<link rel="icon" type="image/svg+xml" href="./misound-icon.svg">
+<link rel="apple-touch-icon" href="./misound-icon.svg">
+<!-- 觅声聊天页：实时房间与在线音乐在浏览器内存中运行。 -->
+<style>
+:root{
+  --bg:#0B0E22;--surface:#171B36;--surface2:#12162E;--line:#2B3157;
+  --text:#F2F4FF;--sub:#C6CBE8;--muted:#9198C4;--dim:#6B739F;
+  --cyan:#3AC9F5;--pink:#FF5FA8;--green:#5BE0A8;--amber:#F6B45A;--red:#FF6E78;--ink:#08101F;
+  --font:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#070A18;color:var(--text);font-family:var(--font);font-size:14px}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.wrap{display:flex;align-items:center;justify-content:center}
+.phone{position:relative;width:390px;height:844px;flex:0 0 auto;border-radius:32px;overflow:hidden;
+  background:linear-gradient(170deg,#171F47 0%,#0B0E22 62%,#080B1B 100%);
+  border:1px solid var(--line);box-shadow:0 40px 90px rgba(0,0,0,.6)}
+.status{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 15px var(--mono)}
+.homebar{position:absolute;left:128px;bottom:12px;width:134px;height:5px;border-radius:3px;background:rgba(138,145,192,.7);z-index:9}
+.views{position:absolute;inset:62px 0 26px}
+.view{position:absolute;inset:0;display:none;overflow-y:auto;padding:8px 22px 20px;scrollbar-width:thin;scrollbar-color:#2B3157 transparent}
+.view.on{display:block}
+.view.room.on{display:flex;flex-direction:column;gap:10px;padding:0 20px 8px;overflow:hidden}
+.view.room.on.scrollable{overflow-y:auto;padding-top:8px;scrollbar-width:thin;scrollbar-color:#2B3157 transparent}
+.view::-webkit-scrollbar{width:4px}.view::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:40px;height:40px;border-radius:12px;border:1px solid var(--line)}
+.brand b{display:block;font-size:17px;letter-spacing:1px}
+.brand small{display:block;font:500 10px var(--mono);color:var(--muted)}
+.link{color:var(--cyan);font-size:12px;font-weight:500;cursor:pointer;background:none;border:0;padding:4px;font-family:var(--font)}
+.link.g{color:var(--green)}.link.r{color:var(--red)}
+.eyebrow{font:600 11px var(--mono);letter-spacing:1.2px;color:var(--cyan);margin:22px 0 0}
+h1{font-size:34px;line-height:1.32;margin:12px 0;font-weight:700;letter-spacing:-.5px}
+.desc{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card .lab{font-size:12px;color:var(--muted)}
+.nickrow{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.nickrow .nm{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:16px;cursor:pointer;font-family:var(--font)}
+.btn.primary{width:100%;height:58px;background:var(--cyan);color:var(--ink);font-size:17px;font-weight:700;box-shadow:0 8px 24px rgba(58,201,245,.22)}
+.btn.primary:active{transform:scale(.985);background:#2AA8D6}
+.btn.ghost{width:100%;height:44px;background:#222850;border:1px solid var(--line);color:var(--sub);font-size:13px;font-weight:500}
+.btn.danger{width:100%;height:44px;background:#4A2038;border:1px solid var(--red);color:var(--red);font-size:13px;font-weight:500}
+.hint{text-align:center;color:var(--dim);font-size:11px;margin:10px 0 12px}
+.switches{display:flex;gap:8px;margin-bottom:18px}
+.sw{flex:1;display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:11px;color:var(--muted);cursor:pointer}
+.sw .box{width:16px;height:16px;border-radius:5px;border:1.5px solid #3A416B;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11px}
+.sw.on{border-color:var(--cyan);color:var(--text)}.sw.on .box{background:var(--cyan);border-color:var(--cyan);color:var(--ink)}
+.sw.admin.on{border-color:var(--amber);color:var(--amber)}.sw.admin.on .box{background:var(--amber);border-color:var(--amber);color:#2A1A06}
+.sect{font-size:13px;font-weight:500;margin:0 0 10px}
+.roomcard{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px;cursor:pointer}
+.roomcard .av{width:36px;height:36px;border-radius:18px;flex:0 0 auto}
+.roomcard .info{flex:1;min-width:0}
+.roomcard b{display:block;font-size:13px;font-weight:500}
+.roomcard small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.strip{display:flex;align-items:center;gap:8px;padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);font-size:11px;margin-top:16px}
+.topbar{height:44px;display:flex;align-items:center;justify-content:space-between;flex:0 0 auto}
+.topbar b{font-size:15px}.topbar small{display:block;text-align:center;font:500 10px var(--mono);color:var(--muted);letter-spacing:.5px}
+.badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;font-size:9px;vertical-align:middle}
+.badge.owner{background:#122C33;color:var(--cyan);border:1px solid var(--cyan)}
+.badge.admin{background:#1A1630;color:var(--amber);border:1px solid var(--amber)}
+.badge.ghost{background:#1A1630;color:var(--green);border:1px solid var(--green)}
+.icobtn{width:20px;height:20px;background:none;border:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bar{flex:0 0 auto;border-radius:10px;padding:9px 12px;font-size:11px;display:none}
+.bar.on{display:block}
+.bar.net{background:#1A1630;border:1px solid var(--amber);color:var(--amber)}
+.bar.ghost{background:#122C33;border:1px solid var(--green);color:var(--green)}
+.metastrip{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:40px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:12px}
+.metastrip .l{display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:4px;background:var(--green)}
+.tools{flex:0 0 auto;display:flex;gap:8px}
+.tools button{flex:1;height:32px;border-radius:10px;background:#222850;border:1px solid var(--line);color:var(--sub);font-size:11px;cursor:pointer;font-family:var(--font)}
+.tools button.hi{border-color:var(--amber);color:var(--amber)}
+.gridtitle{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.gridtitle small{color:var(--dim);font-size:11px}
+.seats{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
+.seat{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.seat .av{width:54px;height:54px;border-radius:27px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:#fff;border:1.5px solid var(--line)}
+.seat.talk .av{border:2.5px solid var(--pink)}.seat.on .av{border:1.5px solid var(--cyan)}
+.seat.muted .av{filter:grayscale(.6)}.seat.banned .av{filter:grayscale(.9);opacity:.6}
+.seat.empty .av{background:var(--surface2);border:1.5px dashed #3A416B;color:var(--dim)}
+.seat.me .av{outline:2px solid var(--green);outline-offset:2px}
+.seat .n{font-size:10px;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat .s{font-size:9px;color:var(--cyan)}
+.seat.talk .s{color:var(--pink)}.seat.muted .s,.seat.empty .s,.seat.banned .s{color:var(--dim)}
+.wavewrap{flex:0 0 auto;height:34px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 10px}
+.wavewrap span{font-size:10px;color:var(--muted);white-space:nowrap}#wave{flex:1;height:26px}
+.musicbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:54px;border-radius:12px;background:var(--surface);border:1px solid var(--line);padding:0 12px}
+.musicbar .mbtn{width:36px;height:36px;border-radius:18px;background:#222850;border:1px solid var(--line);color:var(--sub);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;padding:0}
+.musicbar .mbtn.on{border-color:var(--cyan);color:var(--cyan)}
+.musicbar .mbtn:disabled{opacity:.45;cursor:not-allowed}
+.musicbar .mtitle{flex:1;min-width:0;line-height:1.3}
+.musicbar .mtitle b{display:block;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.musicbar .mtitle small{display:block;font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.musicbar select{width:102px;height:30px;border-radius:9px;background:#222850;border:1px solid var(--line);color:var(--sub);font:11px var(--font);padding:0 6px;outline:none;flex:0 0 auto}
+.musicbar .mtime{width:72px;flex:0 0 auto;text-align:right;font:600 10px var(--mono);color:var(--muted)}
+.chat{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding:2px 0}
+.chathead{display:flex;align-items:center;justify-content:space-between;font-size:12px;flex:0 0 auto}
+.chathead small{color:var(--green);font-size:10px}
+.msg{font-size:11px;line-height:1.5;display:flex;gap:8px}
+.msg .who{color:var(--cyan);flex:0 0 auto}.msg .who.sys{color:var(--green)}.msg .who.warn{color:var(--amber)}
+.msg .txt{color:var(--sub)}
+.bubrow{display:flex;justify-content:flex-end}
+.bubble{max-width:78%;background:var(--cyan);color:var(--ink);padding:9px 11px;border-radius:14px;border-bottom-right-radius:4px;font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.inputbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:48px}
+.inputbar .mode{width:40px;height:40px;border-radius:12px;background:#222850;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
+.inputbar input{flex:1;min-width:0;height:44px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--text);padding:0 14px;font:13px var(--font);outline:none}
+.inputbar input:focus{border-color:var(--cyan)}.inputbar input::placeholder{color:var(--dim)}.inputbar input:disabled{opacity:.55}
+.send{width:44px;height:44px;border-radius:14px;border:0;flex:0 0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#222850}
+.send.ready{background:var(--cyan)}
+.actionbar{flex:0 0 auto;height:74px;border-radius:22px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:space-evenly;padding:0 8px}
+.abtn{width:48px;height:48px;border-radius:24px;background:#222850;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.abtn.main{width:56px;height:56px;border-radius:28px;background:var(--cyan);border:0}
+.abtn.leave{background:#4A2038;border-color:var(--red)}.abtn.off{opacity:.4}
+.policyitem{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.policyitem b{display:block;font-size:13px;margin-bottom:6px}
+.policyitem p{margin:0;font-size:11px;line-height:1.7;color:var(--muted)}
+.warncard{background:#1A1630;border:1px solid var(--amber);border-radius:14px;padding:14px;margin:12px 0}
+.warncard b{color:var(--amber);font-size:13px}.warncard p{margin:6px 0 0;font-size:11px;line-height:1.7;color:var(--sub)}
+.notice{background:#1A1630;border:1px solid var(--amber);border-radius:12px;padding:12px;color:var(--amber);font-size:11px;line-height:1.7;margin-bottom:12px}
+.field{width:100%;height:44px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:0 14px;font:13px var(--font);outline:none;margin:6px 0 12px}
+.field:focus{border-color:var(--cyan)}.field::placeholder{color:var(--dim)}
+.flab{font-size:11px;color:var(--muted)}
+.seg{display:flex;gap:8px;margin:8px 0 14px}
+.seg button{flex:1;height:40px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);color:var(--sub);font-size:11px;cursor:pointer;font-family:var(--font)}
+.seg button.sel{background:#122C33;border-color:var(--cyan);color:var(--cyan)}
+.kv{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.kv b{color:var(--cyan);font:600 12px var(--mono)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.chip{height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:var(--sub);font-size:11px;cursor:pointer;font-family:var(--font)}
+.chip.sel{background:#122C33;border-color:var(--cyan);color:var(--cyan);font-weight:500}
+.mask{position:absolute;inset:0;background:rgba(5,7,19,.82);z-index:20;display:none;align-items:center;justify-content:center;padding:24px}
+.mask.on{display:flex}
+.dialog{width:100%;max-height:720px;overflow-y:auto;background:var(--surface);border:1px solid #3A416B;border-radius:24px;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px;scrollbar-width:thin}
+.dialog h2{margin:0;font-size:20px}.dialog p{margin:0;font-size:12px;line-height:1.7;color:var(--sub)}
+.point{display:flex;align-items:center;gap:8px;font-size:12px}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:640px;overflow-y:auto;background:var(--surface);border-top:1px solid #3A416B;border-radius:24px 24px 0 0;padding:20px 22px 30px;display:none;flex-direction:column;gap:9px;z-index:21}
+.sheet.on{display:flex}
+.sheet h3{margin:0 0 4px;font-size:16px}
+.sheet .u{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:4px}
+.sheet .u .av{width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.sheet .u b{font-size:14px}.sheet .u small{font-size:11px;color:var(--muted)}
+.op{height:42px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--text);font-size:12px;text-align:left;padding:0 14px;cursor:pointer;font-family:var(--font)}
+.op.danger{color:var(--red)}.op.hi{color:var(--amber)}
+.sheet .tip{color:var(--dim);font-size:11px;line-height:1.6;padding:2px 0}
+.toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(10px);background:#222850;border:1px solid var(--line);color:var(--text);font-size:12px;padding:10px 16px;border-radius:20px;opacity:0;transition:.25s;pointer-events:none;z-index:30;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:780px){body{padding:0;display:block}.wrap{display:block}.phone{width:100vw;height:100vh;border-radius:0;border:0}.homebar{left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="phone">
+
+  <div class="status">
+    <span>9:41</span>
+    <svg width="70" height="14" viewBox="0 0 70 14" fill="none" aria-hidden="true"><rect x="0" y="8" width="3" height="5" rx="1" fill="#F2F4FF"/><rect x="5" y="6" width="3" height="7" rx="1" fill="#F2F4FF"/><rect x="10" y="3" width="3" height="10" rx="1" fill="#F2F4FF"/><rect x="15" y=".5" width="3" height="12.5" rx="1" fill="#F2F4FF"/><path d="M25 4.5C28 1.8 32 1.8 35 4.5" stroke="#F2F4FF" stroke-width="1.6" stroke-linecap="round"/><path d="M27.5 7C29.3 5.5 31.7 5.5 33.5 7" stroke="#F2F4FF" stroke-width="1.6" stroke-linecap="round"/><circle cx="30.5" cy="10" r="1.2" fill="#F2F4FF"/><rect x="46" y="2" width="20" height="10" rx="3" stroke="#F2F4FF" stroke-width="1.3"/><rect x="48" y="4" width="14" height="6" rx="1.5" fill="#F2F4FF"/><path d="M67.5 5.5v3" stroke="#F2F4FF" stroke-width="1.6" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="views">
+
+  <!-- 01 进入页 -->
+  <section class="view on" id="v-home">
+    <div class="row" style="height:44px">
+      <div class="brand"><img src="./misound-icon.svg" alt="觅声"><div><b>觅声</b><small>MISOUND · 匿名聊天房</small></div></div>
+      <button class="link" data-go="privacy">隐私说明</button>
+    </div>
+    <div class="eyebrow">NO SIGN-UP&nbsp; · &nbsp;NO HISTORY</div>
+    <h1>点开即聊，<br>聊完即散</h1>
+    <p class="desc">不用注册、不用填资料、不留记录。<br>给你一个随机名字，进房就能打字，也能开麦。</p>
+    <div class="card">
+      <div class="row"><span class="lab">你的临时身份</span><span class="lab" style="font-size:11px;color:var(--dim)">每次进入都会变</span></div>
+      <div class="nickrow"><div class="nm"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="15" height="15" rx="4" stroke="#3AC9F5" stroke-width="1.5"/><circle cx="7" cy="7" r="1.3" fill="#3AC9F5"/><circle cx="13" cy="13" r="1.3" fill="#3AC9F5"/><circle cx="10" cy="10" r="1.3" fill="#3AC9F5"/></svg><span id="nick">—</span></div><button class="link" id="reroll">换一个</button></div>
+    </div>
+    <button class="btn primary" id="enter" style="margin-top:18px"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 10v2M6 6v10M10 3v16M14 7v8M18 9v4" stroke="#08101F" stroke-width="2" stroke-linecap="round"/></svg>点开即聊</button>
+    <div class="hint">进入 8 人房间 · 打字或开麦都行，无需等待</div>
+    <div class="switches">
+      <div class="sw" id="ghostSw"><span class="box"></span>隐身进房</div>
+    <div class="sw admin" id="adminSw"><span class="box"></span>管理员权限</div>
+    </div>
+    <div class="strip" style="margin:0 0 16px;color:var(--green);border-color:#24503D">自建房间立即对所有浏览器可见 · 文字实时同步 · 消息只在内存</div>
+    <div class="row sect"><span>正在热聊</span><div><button class="link g" id="createBtn">+ 创建房间</button></div></div>
+    <div id="roomlist"></div>
+    <div class="strip"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5 13 3.3v4.1c0 3.2-2.1 5.7-5 7.1-2.9-1.4-5-3.9-5-7.1V3.3L8 1.5Z" stroke="#5BE0A8" stroke-width="1.4" stroke-linejoin="round"/><path d="m5.8 8 1.5 1.5 3-3" stroke="#5BE0A8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>不保存任何文字与语音 · 退出即清空</div>
+  </section>
+
+  <!-- 02 房间 -->
+  <section class="view room" id="v-room">
+    <div class="topbar">
+      <button class="icobtn" id="roomBack" aria-label="返回"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="#F2F4FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div><b id="roomTitle">觅声房间</b><small id="roomSub">等待接入 · 不留记录</small></div>
+      <button class="icobtn" id="roomExit" aria-label="退出"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 3.5H5.8A2.3 2.3 0 0 0 3.5 5.8v8.4a2.3 2.3 0 0 0 2.3 2.3h5.7" stroke="#F2F4FF" stroke-width="1.6" stroke-linecap="round"/><path d="M13 6.5 16.5 10 13 13.5M8.5 10h8" stroke="#F2F4FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="bar net" id="netbar">网络异常，文字消息暂不发送；语音不受影响</div>
+    <div class="bar ghost" id="roomBar">等待接入实时房间</div>
+    <div class="metastrip"><div class="l"><i class="dot"></i><span id="seatCount">8 麦位 · 6 人在麦上</span></div><span style="color:var(--green);font-size:11px">阅后即焚</span></div>
+    <div class="tools" id="tools"></div>
+    <div class="gridtitle"><span>麦位</span><small id="seatHint">点空位上麦 · 下方打字</small></div>
+    <div class="seats" id="seats"></div>
+    <div class="wavewrap"><span id="waveLabel">实时音频 · 不上传</span><canvas id="wave" width="300" height="26"></canvas></div>
+    <div class="musicbar" aria-label="在线音乐播放器">
+      <button class="mbtn" id="musicPrev" aria-label="上一曲"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M12.5 3.5v10L5.8 8.5l6.7-5Z" fill="currentColor"/><rect x="4" y="3.5" width="1.7" height="10" rx=".8" fill="currentColor"/></svg></button>
+      <button class="mbtn on" id="musicPlay" aria-label="播放或暂停"><svg id="musicIconPlay" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5.5 3.2 14 9l-8.5 5.8V3.2Z" fill="currentColor"/></svg><svg id="musicIconPause" width="18" height="18" viewBox="0 0 18 18" fill="none" style="display:none"><rect x="4.4" y="3.2" width="3" height="11.6" rx="1" fill="currentColor"/><rect x="10.6" y="3.2" width="3" height="11.6" rx="1" fill="currentColor"/></svg></button>
+      <button class="mbtn" id="musicNext" aria-label="下一曲"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M4.5 3.5v10L11.2 8.5 4.5 3.5Z" fill="currentColor"/><rect x="11.3" y="3.5" width="1.7" height="10" rx=".8" fill="currentColor"/></svg></button>
+      <div class="mtitle"><b id="musicName">在线音源未连接</b><small id="musicStatus">联网后可播放公共演示音乐</small></div>
+      <select id="musicSource" aria-label="选择在线音源"></select>
+      <span class="mtime" id="musicTime">--:--</span>
+    </div>
+    <audio id="musicAudio" preload="none"></audio>
+    <div class="chathead"><span>文字聊天 · 阅后即焚</span><small>文字 / 语音 可同时用</small></div>
+    <div class="chat" id="chat"></div>
+    <div class="inputbar">
+      <button class="mode" id="modeBtn" aria-label="切换输入"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.8" y="4.5" width="16.4" height="11" rx="2.4" stroke="#C6CBE8" stroke-width="1.4"/><path d="M5 8h.01M8 8h.01M11 8h.01M14 8h.01M5 11h.01M8 11h.01M11 11h.01M14 11h.01M6.5 13.5h7" stroke="#C6CBE8" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <input id="msgInput" maxlength="200" placeholder="说点什么… 匿名，别报真名" autocomplete="off">
+      <button class="send" id="sendBtn" aria-label="发送"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10 17 3.5 13.5 17l-3.2-5.3L3 10Z" fill="#6B739F"/></svg></button>
+    </div>
+    <div class="actionbar">
+      <button class="abtn main" id="micBtn" aria-label="麦克风"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#08101F"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="#08101F" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="abtn" id="handBtn" aria-label="举手"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.2c0 3-2.2 5.3-5.2 5.3H11c-2.6 0-4.2-1.6-5.4-3.7L4 12.6a1.5 1.5 0 0 1 2.5-1.6L9 14" stroke="#C6CBE8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="abtn" id="manageBtn" aria-label="房间管理"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.6" stroke="#C6CBE8" stroke-width="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="#C6CBE8" stroke-width="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="#C6CBE8" stroke-width="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="#C6CBE8" stroke-width="1.5"/></svg></button>
+      <button class="abtn leave" id="leaveBtn" aria-label="离开"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4.5 9.5c5-4 10-4 15 0l-2 3.2-3-.7-1-2.4c-1.6-.5-3.4-.5-5 0l-1 2.4-3 .7-2-3.2" fill="#FF6E78"/></svg></button>
+    </div>
+  </section>
+
+  <!-- 04 隐私速览 -->
+  <section class="view" id="v-privacy">
+    <div class="topbar"><button class="icobtn" data-go="home"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="#F2F4FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><b>隐私与数据</b><img src="./misound-icon.svg" width="28" height="28" style="border-radius:9px" alt=""></div>
+    <div style="width:52px;height:52px;border-radius:26px;background:#122C33;border:1px solid var(--green);display:flex;align-items:center;justify-content:center;margin:16px 0 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2.5 19 5v6c0 4.6-3 8.3-7 10-4-1.7-7-5.4-7-10V5l7-2.5Z" stroke="#5BE0A8" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.8 11.8 2.2 2.2 4.2-4.4" stroke="#5BE0A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h1 style="font-size:26px;margin:0 0 8px">我们什么都不存</h1>
+    <p class="desc">没有账号、没有云端记录、没有历史消息。<br>文字与语音都只在内存里流转，房间最后一人离开即清空。</p>
+    <div class="sect">具体不保存什么</div>
+    <div class="policyitem"><b>不存文字与聊天记录</b><p>文字消息只在当前房间内存里流转，不写数据库、不落日志。</p></div>
+    <div class="policyitem"><b>不存账号与昵称</b><p>昵称由词库随机生成，不绑定手机号、微信或任何身份。</p></div>
+    <div class="policyitem"><b>不存语音与录音</b><p>文字与语音都只做实时转发，服务端不录音、不转存、不回放。</p></div>
+    <div class="policyitem"><b>不留设备标识</b><p>不申请通讯录与定位权限，不写本地缓存与 Cookie。</p></div>
+    <div class="warncard"><b>匿名不等于无约束</b><p>房间内可一键举报、屏蔽与换房；房主与管理员可关闭房间。我们无法追溯身份，因此不提供聊天记录申诉。</p></div>
+    <button class="btn primary" data-go="home" style="height:50px;font-size:15px">我知道了，返回</button>
+    <button class="link" data-go="policy" style="display:block;width:100%;text-align:center;margin-top:10px">查看完整隐私政策 · 未成年人保护与举报</button>
+  </section>
+
+  <!-- 07 政策正文 -->
+  <section class="view" id="v-policy">
+    <div class="topbar"><button class="icobtn" data-go="privacy"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="#F2F4FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><b>隐私政策</b><button class="link" data-go="home">关闭</button></div>
+    <h1 style="font-size:26px;margin:14px 0 4px">隐私政策</h1>
+    <div style="color:var(--amber);font-size:11px;margin-bottom:12px">设计草案 · 待法务审阅 · 生效日期与联系方式待填</div>
+    <div class="notice">本页是完整条款正文，速览页为摘要。文案为设计草案，需法务确认后才可生效。</div>
+    <div class="policyitem"><b>01 我们收集什么</b><p>仅临时昵称、当前房间号与必要安全日志。不收集姓名、手机号、微信、通讯录、定位与设备指纹。</p></div>
+    <div class="policyitem"><b>02 我们不保存什么</b><p>文字消息、语音流、录音、图片、历史记录、草稿与已读状态。均不写数据库、不落日志、不做云端同步。</p></div>
+    <div class="policyitem"><b>03 数据存活多久</b><p>文字与语音只在进程内存里流转。最后一人离开、房主关闭房间或你主动退出，房间与临时身份立即销毁。</p></div>
+    <div class="policyitem"><b>04 唯一例外</b><p>举报记录与必要安全日志，用于内容安全与法律要求；不与临时昵称绑定。</p></div>
+    <div class="policyitem"><b>05 未成年人保护</b><p>未满 14 周岁请勿进入。我们不设账号体系，不尝试识别年龄，也不提供私信、关注与跨房间身份继承。</p></div>
+    <div class="policyitem"><b>06 你的选择</b><p>不同意即可退出；可隐身收听、一键换房、屏蔽与举报。管理员权限为会话内临时角色，刷新即失效，不落库。</p></div>
+    <div class="policyitem"><b>07 实时通道</b><p>浏览器与服务器之间使用临时 WebSocket 通道同步文字和座位状态。房间、消息与临时身份仅在服务进程内存中保存，不写入数据库或磁盘。</p></div>
+    <button class="btn primary" data-go="privacy" style="height:50px;font-size:15px">我已阅读并返回</button>
+  </section>
+
+  <!-- 08 安全与举报 -->
+  <section class="view" id="v-report">
+    <div class="topbar"><button class="icobtn" data-go="room"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="#F2F4FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><b>安全与举报</b><button class="link" data-go="room">关闭</button></div>
+    <div class="sect" style="margin-top:14px">未成年人保护</div>
+    <div class="policyitem"><p>未满 14 周岁请勿进入；我们无法也不尝试通过账号体系识别年龄。</p></div>
+    <div class="policyitem"><p>监护人或本人提出删除诉求时，因数据仅驻留内存，退出房间即完成清除。</p></div>
+    <div class="policyitem"><p>不提供私信、关注、位置共享，也不允许跨房间继承临时身份。</p></div>
+    <div class="sect" style="margin-top:16px">举报与屏蔽</div>
+    <div class="chips" id="chips"></div>
+    <button class="btn primary" id="submitReport" style="height:48px;font-size:15px">提交举报</button>
+    <p style="color:var(--green);font-size:11px;line-height:1.7;margin:10px 0 14px">提交后仅记录理由与房间号，不与临时昵称绑定；可同时屏蔽该用户或一键换房。</p>
+    <div class="policyitem"><b>提交后会发生什么</b><p style="margin-top:8px">01 记录理由与房间号，不关联临时昵称。<br>02 该用户在本房间内被静音，你可一键换房。<br>03 房间销毁后，仅保留必要安全日志。</p></div>
+    <div style="display:flex;gap:24px;justify-content:center;margin:6px 0 12px"><button class="link" id="switchRoom">一键换房</button><button class="link" id="blockUser">屏蔽该用户</button></div>
+    <p style="color:var(--amber);font-size:11px;line-height:1.7">我们无法追溯身份，因此不提供聊天记录申诉；遇到骚扰请直接退出，房间会立刻销毁。</p>
+  </section>
+
+  </div><!-- /views -->
+
+  <!-- 06 同意弹窗 -->
+  <div class="mask" id="consent"><div class="dialog">
+    <div style="width:40px;height:40px;border-radius:20px;background:#122C33;border:1px solid var(--green);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2 16 4.2v5c0 3.8-2.5 6.9-6 8.3-3.5-1.4-6-4.5-6-8.3v-5L10 2Z" stroke="#5BE0A8" stroke-width="1.4" stroke-linejoin="round"/><path d="m7.3 9.8 1.9 1.9 3.5-3.6" stroke="#5BE0A8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h2>进来之前，先说清楚</h2>
+    <p>这里不保存文字、语音与真实身份，昵称随机生成，房间最后一人离开或被关闭即销毁。为符合法规，仅保留必要的安全日志与举报记录。</p>
+    <div class="point"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m2.5 7.2 3 3 6-6.4" stroke="#5BE0A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>不存文字、聊天记录与录音</div>
+    <div class="point"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m2.5 7.2 3 3 6-6.4" stroke="#5BE0A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>不绑定手机号、微信或设备标识</div>
+    <div class="point"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="m2.5 7.2 3 3 6-6.4" stroke="#5BE0A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>随时退出，房间与临时身份立刻销毁</div>
+    <button class="btn primary" id="agree" style="height:48px;font-size:15px">同意并进入</button>
+    <button class="btn ghost" id="justLook">仅看看，不进入</button>
+    <button class="link" data-go="policy" id="policyLink" style="text-align:center">查看完整隐私说明</button>
+  </div></div>
+
+  <!-- 09 创建实时房间 -->
+  <div class="mask" id="createDlg"><div class="dialog">
+    <h2>创建实时房间</h2>
+    <p>创建后会立即加入实时房间，你可以管理座位和文字聊天权限。</p>
+    <span class="flab">房间名</span>
+    <input class="field" id="newRoomName" maxlength="16" placeholder="例如：深夜杂谈局" autocomplete="off">
+    <span class="flab">加入方式</span>
+    <div class="seg" id="visSeg"><button data-vis="public" class="sel">公开房间</button><button data-vis="code">仅凭房号</button><button data-vis="hidden">隐身房间</button></div>
+    <span class="flab">上麦方式</span>
+    <div class="seg" id="handSeg"><button data-hand="free" class="sel">点空位即上麦</button><button data-hand="ask">需举手申请</button></div>
+    <div class="kv"><span>网络模式</span><b>实时房间 · WebSocket</b></div>
+    <div class="kv"><span>中转方式</span><b>仅内存 · 不落盘</b></div>
+    <div class="kv"><span>接入凭据</span><b id="newRoomId">#0000</b></div>
+    <div class="kv"><span>房主 / 代理持有者</span><b id="newOwner">—</b></div>
+    <div class="tip" style="color:var(--dim);font-size:11px;line-height:1.6">关闭房间 = 撤销本机代理节点、断开所有接入；房号与中转数据同时失效。</div>
+    <button class="btn primary" id="confirmCreate" style="height:48px;font-size:15px;margin-top:12px">创建并进入</button>
+    <button class="btn ghost" id="cancelCreate">取消</button>
+  </div></div>
+
+  <!-- 03 / 10 麦位管理与房间工具 -->
+  <div class="mask" id="sheetMask"></div>
+  <div class="sheet" id="sheet"></div>
+
+  <div class="toast" id="toast"></div>
+  <div class="homebar"></div>
+</div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+var ADJ=['迟到的','半糖的','夜班的','三号的','不睡觉的','雨林的','过站的','蓝色的','安静的','末班的','没信号的','晒过太阳的'];
+var NOUN=['海雾','汽水','司机','月台','猫','收音机','信箱','候鸟','雨天','路灯','旧唱片','风筝'];
+var REASONS=['骚扰与辱骂','色情或不当内容','冒充与诈骗','其他'];
+var AV=['#2E7FA8','#5A56B8','#343B63','#A04C7C','#2F7E77','#8A6A3B'];
+var OWNER_PERMS=['mute','down','kick','allmute','alldown','lock','close','visibility','transfer','ghostlist','ban'];
+
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function randomName(){return rand(ADJ)+rand(NOUN);}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function rid(){return '#'+String(1000+Math.floor(Math.random()*9000));}
+
+var S={
+  agreed:false,nick:randomName(),view:'home',joined:false,
+  role:'visitor',ghostWanted:false,adminWanted:false,ghost:false,
+  roomName:'',roomId:null,visibility:'public',needHand:false,
+  seats:new Array(8).fill(null),seatState:new Array(8).fill(null),banned:[],
+  mySeat:-1,micOn:false,messages:[],network:'ok',locked:false,hand:false,
+  reason:REASONS[0],sheetSeat:-1,ghosts:0,pendingCreate:false,closeArmed:false,
+  proxy:false,proxyNodes:0,proxyBytes:0
+};
+var MUSIC=[
+  {name:'Groove Salad · 电台',artist:'SomaFM · Ambient Chill',url:'https://ice1.somafm.com/groovesalad-128-mp3',live:true},
+  {name:'Song 1 · 在线演示曲',artist:'SoundHelix · Public Demo',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',live:false},
+  {name:'Lush · 电台',artist:'SomaFM · Vocals + Electronica',url:'https://ice1.somafm.com/lush-128-mp3',live:true}
+];
+var music={index:0,wanted:false,loading:false};
+var musicAudio=null;
+var musicAnalyser=null;
+var musicContext=null;
+var CREATE={id:'#0000',vis:'public',hand:'free'};
+var socket=null,socketReady=false,SELF='c0';
+var NETROOMS=[];
+function can(p){return S.role==='admin'||(S.role==='owner'&&OWNER_PERMS.indexOf(p)>=0);}
+function roleName(){return S.role==='admin'?'管理员':S.role==='owner'?'房主':'成员';}
+
+var toastTimer;
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('on');},2400);}
+function show(v){
+  S.view=v;
+  ['home','room','privacy','policy','report'].forEach(function(n){$('v-'+n).classList.toggle('on',n===v);});
+  if(v!=='room'){closeSheet();}
+  updateStat();
+}
+function renderRooms(){
+  if(!NETROOMS.length){
+    $('roomlist').innerHTML='<div class="strip" style="justify-content:center">正在连接实时房间…</div>';
+    return;
+  }
+  var palette=['#2A2F5E','#4A2551','#2F7E77','#2E7FA8','#5A56B8','#A04C7C'];
+  $('roomlist').innerHTML=NETROOMS.slice(0,6).map(function(r,i){
+    var count=r.count+' 人在房 · '+r.seats+'/8 在麦';
+    return '<div class="roomcard" data-room="'+i+'"><div class="av" style="background:'+palette[i%palette.length]+'"></div><div class="info"><b>'+esc(r.name)+'</b><small>'+esc(count)+'</small></div><span class="link">加入</span></div>';
+  }).join('');
+}
+function renderSeats(){
+  var html='';
+  for(var i=0;i<8;i++){
+    var name=S.seats[i],st=S.seatState[i],cls='',label='点击上麦',initial='+',avStyle='';
+    if(S.banned.indexOf(i)>=0){cls='banned';label='已禁言';}
+    else if(i===S.mySeat){cls='on me';label=S.micOn?'在麦':'已静音';initial='我';avStyle='background:#2E7FA8';}
+    else if(name){cls=st==='talk'?'talk':st==='muted'?'muted':'on';label=st==='talk'?'说话中':st==='muted'?'已静音':'在麦';initial=name.slice(0,1);avStyle='background:'+AV[i%AV.length];}
+    else{cls='empty';}
+    html+='<div class="seat '+cls+'" data-seat="'+i+'"><div class="av" style="'+avStyle+'">'+esc(initial)+'</div><div class="n">'+esc(name||'空位')+'</div><div class="s">'+label+'</div></div>';
+  }
+  $('seats').innerHTML=html;
+  var n=S.seats.filter(Boolean).length;
+  var extra=(S.ghosts&&(S.role==='owner'||S.role==='admin'))?' · 隐身 '+S.ghosts+'（仅管理可见）':'';
+  $('seatCount').textContent='8 麦位 · '+n+' 人在麦上'+extra;
+  $('seatHint').textContent=S.locked?'麦位已锁定 · 需举手':'点空位上麦 · 下方打字';
+  var rb=$('roomBar');
+  if(!S.joined){rb.classList.remove('on');}
+  else if(S.ghost){rb.className='bar ghost on';rb.textContent='你正在隐身收听 · 不显示在成员列表，也不能发言与上麦';}
+  else{rb.className='bar ghost on';rb.textContent='实时房间已接入 · 文字同步在线，音频仅本机预览';}
+  $('msgInput').disabled=(S.ghost||S.network!=='ok');
+  $('msgInput').placeholder=S.ghost?'隐身状态仅可收听':'说点什么… 匿名，别报真名';
+  $('micBtn').classList.toggle('off',S.ghost);
+  renderTools();
+}
+function renderTools(){
+  var t=$('tools');
+  if(!(S.role==='owner'||S.role==='admin')){t.innerHTML='';t.style.display='none';return;}
+  t.style.display='flex';
+  t.innerHTML='<button id="toolManage">房间管理</button><button id="toolClose" class="hi">关闭房间</button>';
+}
+function renderMessages(){
+  $('chat').innerHTML=S.messages.map(function(m){
+    if(m.type==='self'){return '<div class="bubrow"><div class="bubble">'+esc(m.text)+'</div></div>';}
+    return '<div class="msg"><span class="who '+(m.type==='sys'?'sys':m.type==='warn'?'warn':'')+'">'+esc(m.who)+'</span><span class="txt">'+esc(m.text)+'</span></div>';
+  }).join('');
+  $('chat').scrollTop=$('chat').scrollHeight;
+}
+function initSocket(){
+  if(socket){try{socket.close();}catch(e){}}
+  socketReady=false;
+  try{socket=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');}
+  catch(e){S.network='bad';$('netbar').classList.add('on');$('netbar').textContent='实时聊天连接失败 · 请刷新页面';return;}
+  socket.onopen=function(){
+    socketReady=true;S.network='ok';$('netbar').classList.remove('on');
+    send({type:'admin',admin:S.adminWanted});
+    renderSeats();updateSend();updateStat();
+  };
+  socket.onmessage=function(e){
+    var data;
+    try{data=JSON.parse(e.data);}catch(err){return;}
+    if(data.type==='rooms'){
+      NETROOMS=data.rooms||[];
+      renderRooms();
+      return;
+    }
+    if(data.type==='state'){
+      if(data.id!==S.roomId)return;
+      SELF=data.selfId||SELF;
+      S.seats=data.seats.slice();S.seatState=data.seatState.slice();S.banned=data.banned.slice();
+      S.ghosts=data.ghosts;S.role=data.roles&&data.roles[SELF]||S.role;S.mySeat=data.selfSeats&&data.selfSeats[SELF];
+      if(S.mySeat===undefined||S.mySeat===null)S.mySeat=-1;
+      S.proxyBytes=data.bytes||S.proxyBytes;S.proxyNodes=data.count||S.proxyNodes;
+      renderSeats();renderMessages();updateSend();updateStat();
+      return;
+    }
+    if(data.type==='joined'){
+      SELF=data.selfId;S.roomId=data.id;S.joined=true;S.role=data.role||'visitor';S.mySeat=data.selfSeat;
+      if(S.mySeat===undefined||S.mySeat===null)S.mySeat=-1;
+      S.seats=data.seats.slice();S.seatState=data.seatState.slice();S.banned=data.banned.slice();
+      S.ghosts=data.ghosts;S.messages=data.messages.slice();S.visibility=data.visibility;S.locked=data.locked;
+      S.proxy=true;S.proxyNodes=data.count;S.proxyBytes=data.bytes||0;
+      roomHead();show('room');$('v-room').classList.toggle('scrollable',window.innerHeight<790);
+      renderSeats();renderMessages();updateSend();
+      toast(S.ghost?'已隐身进入房间':'已接入实时房间');
+      return;
+    }
+    if(data.type==='closed'){
+      S.joined=false;S.roomId=null;S.mySeat=-1;S.micOn=false;S.role='visitor';S.ghost=false;
+      stopMic();
+      if(musicAudio&&!musicAudio.paused){music.wanted=false;musicAudio.pause();}
+      show('home');renderSeats();updateSend();toast(data.message||'房间已关闭');
+      return;
+    }
+    if(data.type==='error'){toast(data.message||'操作失败');}
+  };
+  socket.onclose=function(){
+    socketReady=false;
+    if(S.joined){S.network='bad';$('netbar').classList.add('on');$('netbar').textContent='实时连接已断开 · 消息暂不发送';}
+    renderSeats();updateSend();updateStat();
+  };
+}
+function send(obj){
+  if(socketReady&&socket&&socket.readyState===1){socket.send(JSON.stringify(obj));return true;}
+  return false;
+}
+function updateSend(){
+  var v=$('msgInput').value.trim(),ok=v.length>0&&S.network==='ok'&&!S.ghost;
+  $('sendBtn').classList.toggle('ready',ok);
+  $('sendBtn').innerHTML='<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10 17 3.5 13.5 17l-3.2-5.3L3 10Z" fill="'+(ok?'#08101F':'#6B739F')+'"/></svg>';
+}
+function renderChips(){
+  $('chips').innerHTML=REASONS.map(function(r,i){return '<button class="chip'+(S.reason===r?' sel':'')+'" data-reason="'+i+'">'+esc(r)+'</button>';}).join('');
+}
+function updateStat(){}
+
+function musicSources(){
+  $('musicSource').innerHTML=MUSIC.map(function(item,i){
+    return '<option value="'+i+'"'+(i===music.index?' selected':'')+'>'+esc(item.name)+'</option>';
+  }).join('');
+}
+function musicTimer(t){
+  if(!isFinite(t)||t<0)return '--:--';
+  var m=Math.floor(t/60),s=Math.floor(t%60);
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function musicRender(){
+  var item=MUSIC[music.index],playing=!!musicAudio&&!musicAudio.paused;
+  $('musicName').textContent=item.name;
+  $('musicStatus').textContent=music.loading?'正在连接在线音源…':item.artist+(item.live?' · 实时电台':' · 可拖动进度');
+  $('musicTime').textContent=item.live?'LIVE':musicTimer(musicAudio?musicAudio.currentTime:0)+(isFinite(musicAudio&&musicAudio.duration)?' / '+musicTimer(musicAudio.duration):'');
+  $('musicIconPlay').style.display=playing?'none':'';
+  $('musicIconPause').style.display=playing?'':'none';
+  $('musicPlay').classList.toggle('on',playing||music.loading);
+  $('musicPlay').setAttribute('aria-label',playing?'暂停音乐':'播放音乐');
+  $('musicPrev').disabled=music.loading;
+  $('musicNext').disabled=music.loading;
+  updateStat();
+}
+function musicLoad(autoplay){
+  if(!musicAudio)return;
+  var item=MUSIC[music.index];
+  musicAnalyser=null;
+  music.loading=true;music.wanted=!!autoplay;musicAudio.pause();
+  musicAudio.crossOrigin='anonymous';musicAudio.preload=autoplay?'auto':'none';
+  musicAudio.src=item.url;musicAudio.load();musicRender();
+  if(!autoplay){music.loading=false;musicRender();return;}
+  var p=musicAudio.play();
+  if(p&&p.catch)p.catch(function(){music.loading=false;music.wanted=false;musicRender();toast('浏览器需要点击播放后才能连接在线音源');});
+}
+function musicToggle(){
+  var item=MUSIC[music.index];
+  if(!navigator.onLine){music.wanted=false;musicAudio.pause();musicRender();toast('当前浏览器处于离线状态');return;}
+  if(musicAudio.paused){musicLoad(true);toast('正在连接 '+item.name);}
+  else{music.wanted=false;music.loading=false;musicAudio.pause();musicRender();}
+}
+function musicStep(delta){
+  music.index=(music.index+delta+MUSIC.length)%MUSIC.length;
+  musicSources();
+  if(music.wanted||music.loading)musicLoad(true);else musicLoad(false);
+  if(music.wanted)toast('已切换到 '+MUSIC[music.index].name);
+}
+function initMusic(){
+  musicAudio=$('musicAudio');
+  musicSources();musicRender();
+  $('musicPlay').onclick=musicToggle;
+  $('musicPrev').onclick=function(){musicStep(-1);};
+  $('musicNext').onclick=function(){musicStep(1);};
+  $('musicSource').onchange=function(){music.index=parseInt(this.value,10)||0;if(music.wanted||music.loading)musicLoad(true);else musicLoad(false);};
+  musicAudio.addEventListener('playing',function(){music.loading=false;if(!musicAnalyser)connectMusicAnalyser();musicRender();});
+  musicAudio.addEventListener('pause',function(){music.loading=false;musicRender();});
+  musicAudio.addEventListener('timeupdate',musicRender);
+  musicAudio.addEventListener('waiting',function(){music.loading=true;musicRender();});
+  musicAudio.addEventListener('error',function(){
+    music.loading=false;music.wanted=false;musicRender();
+    if(MUSIC[music.index])toast(MUSIC[music.index].name+' 连接失败，可换一个音源');
+  });
+}
+function connectMusicAnalyser(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC||!musicAudio)return;
+    if(!musicContext)musicContext=new AC();
+    if(musicContext.state==='suspended')musicContext.resume();
+    var source=musicContext.createMediaElementSource(musicAudio);
+    musicAnalyser=musicContext.createAnalyser();musicAnalyser.fftSize=64;
+    source.connect(musicAnalyser);musicAnalyser.connect(musicContext.destination);
+  }catch(e){musicAnalyser=null;}
+}
+
+function roomHead(){
+  var badge=S.role==='admin'?'<span class="badge admin">管理员</span>':S.role==='owner'?'<span class="badge owner">房主</span>':S.ghost?'<span class="badge ghost">隐身</span>':'';
+  $('roomTitle').innerHTML=esc(S.roomName)+badge;
+  var vis=S.visibility==='public'?'公开':S.visibility==='code'?'仅凭房号':'隐身房间';
+  $('roomSub').textContent='ROOM '+S.roomId+' · '+vis+' · 不留记录';
+}
+function wipe(){
+  S.joined=false;S.mySeat=-1;S.micOn=false;S.messages=[];
+  S.seats=new Array(8).fill(null);S.seatState=new Array(8).fill(null);
+  S.network='ok';S.locked=false;S.hand=false;S.role='visitor';S.ghost=false;
+  S.ghosts=0;S.banned=[];S.pendingCreate=false;S.closeArmed=false;S.proxy=false;S.proxyNodes=0;S.proxyBytes=0;S.roomName='';S.roomId=null;
+  stopMic();
+  if(musicAudio&&!musicAudio.paused){music.wanted=false;musicAudio.pause();}
+  show('home');renderSeats();updateSend();
+}
+function leaveRoom(){var own=S.role==='owner';wipe();toast(own?'房间已销毁 · 房号与临时身份一并失效':'房间已销毁 · 临时身份与消息已清空');}
+function toggleMic(){
+  if(S.ghost){toast('隐身状态不可上麦或发言');return;}
+  if(S.mySeat<0){toast('先点一个空麦位上麦');return;}
+  S.micOn=!S.micOn;
+  if(S.micOn)startMic();else{stopMic();toast('已静音 · 不影响文字输入');}
+  renderSeats();updateStat();
+}
+var audioCtx=null,analyser=null,stream=null;
+function startMic(){
+  stopMic();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('waveLabel').textContent='演示态 · 未采集';toast('浏览器不支持采集，已切换为演示态');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+    stream=s;var AC=window.AudioContext||window.webkitAudioContext;
+    audioCtx=new AC();analyser=audioCtx.createAnalyser();analyser.fftSize=64;
+    audioCtx.createMediaStreamSource(s).connect(analyser);
+    $('waveLabel').textContent='本机采集 · 不上传';toast('已开麦 · 音频仅在本机内存处理，不上传');
+  }).catch(function(){$('waveLabel').textContent='演示态 · 未授权';toast('未获得麦克风权限，已切换为演示态');});
+}
+function stopMic(){
+  if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}
+  if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}
+  analyser=null;$('waveLabel').textContent='实时音频 · 不上传';
+}
+function drawWave(){
+  var c=$('wave'),ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  var bars=28,data=null;
+  if(musicAnalyser&&musicAudio&&!musicAudio.paused){
+    data=new Uint8Array(musicAnalyser.frequencyBinCount);musicAnalyser.getByteFrequencyData(data);
+  }else if(analyser){data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);}
+  for(var i=0;i<bars;i++){
+    var v=data?data[Math.floor(i*data.length/bars)]/255:0.12+0.08*Math.abs(Math.sin(Date.now()/500+i*0.7));
+    var bh=Math.max(3,v*h);ctx.fillStyle=data?'#3AC9F5':'#4A5280';
+    ctx.fillRect(i*(w/bars)+1,(h-bh)/2,Math.max(2,w/bars-3),bh);
+  }
+  requestAnimationFrame(drawWave);
+}
+function sendChat(){
+  var el=$('msgInput'),t=el.value.trim();if(!t)return;
+  if(S.ghost){toast('隐身状态仅可收听');return;}
+  if(S.network!=='ok'){toast('网络异常，消息不发送也不补发');return;}
+  if(S.mySeat>=0&&S.banned.indexOf(S.mySeat)>=0){toast('你已被禁言 · 仅本次房间有效');return;}
+  if(!send({type:'chat',text:t})){toast('实时连接未就绪 · 消息不补发');return;}
+  S.messages.push({type:'self',text:t});S.proxyBytes+=t.length*3+64;el.value='';updateSend();renderMessages();updateStat();
+}
+function closeSheet(){$('sheet').classList.remove('on');$('sheetMask').classList.remove('on');S.sheetSeat=-1;S.closeArmed=false;}
+
+function openSheet(i){
+  S.sheetSeat=i;var name=S.seats[i],html='';
+  if(name){
+    html+='<h3>麦位管理</h3><div class="u"><div class="av" style="background:'+AV[i%AV.length]+'">'+esc(name.slice(0,1))+'</div><div><b>'+esc(name)+'</b><br><small>麦位 0'+(i+1)+' · 临时身份 · 仅本次房间</small></div></div>';
+    if(can('mute')){
+      html+='<button class="op" data-op="mute">切换静音</button>'+
+        '<button class="op" data-op="ban">'+(S.banned.indexOf(i)>=0?'解除禁言':'禁止其文字发言')+'</button>'+
+        '<button class="op" data-op="down">请 TA 下麦，空出麦位 0'+(i+1)+'</button>'+
+        '<button class="op danger" data-op="kick">踢出房间</button>'+
+        '<button class="op" data-op="transfer">转让房主给 TA</button>';
+    }else{
+      html+='<button class="op" data-op="view">查看临时身份</button><button class="op" data-op="report">举报不当发言</button>'+
+        '<div class="tip">只有房主 / 管理员能管理麦位。想拥有全部权限，可以自己创建房间。</div>';
+    }
+  }else{
+    html+='<h3>空麦位 0'+(i+1)+'</h3><div class="tip">点击空位即可上麦；房主可锁定麦位改为举手申请。</div>';
+  }
+  html+='<button class="btn ghost" data-op="close">完成</button><div class="tip" style="color:var(--green)">状态仅实时同步，不写入任何数据库</div>';
+  $('sheet').innerHTML=html;$('sheet').classList.add('on');$('sheetMask').classList.add('on');
+}
+function openTools(){
+  if(!(S.role==='owner'||S.role==='admin')){toast('仅房主 / 管理员可管理房间');return;}
+  var html='<h3>房间管理 · '+roleName()+'</h3>'+
+    '<div class="u"><div class="av" style="background:#2A2F5E">M</div><div><b>'+esc(S.roomName)+'</b><br><small>ROOM '+S.roomId+' · 实时房间 · '+roleName()+'</small></div></div>'+
+    '<button class="op" data-op="roominfo">房间状态：在线 '+S.proxyNodes+' 人 · 已同步 '+S.proxyBytes+' B</button>'+
+    '<button class="op" data-op="allmute">全员静音</button>'+
+    '<button class="op" data-op="alldown">全员下麦</button>'+
+    '<button class="op" data-op="lock">'+(S.locked?'解除麦位锁定':'锁定麦位（需举手）')+'</button>'+
+    '<button class="op" data-op="visibility">切换可见性：'+(S.visibility==='public'?'公开':S.visibility==='code'?'仅凭房号':'隐身房间')+'</button>'+
+    '<button class="op" data-op="ghostlist">隐身听众 '+S.ghosts+' 人 · 请出全部</button>'+
+    '<button class="op hi" data-op="banall">禁止全员文字发言</button>'+
+    '<button class="op danger" data-op="closeRoom" id="closeRoomBtn">关闭房间（需二次确认）</button>'+
+    '<div class="tip">房主可管理自己的房间；关闭房间会断开所有成员并清空临时数据。</div>'+
+    '<button class="btn ghost" data-op="close">完成</button>';
+  $('sheet').innerHTML=html;$('sheet').classList.add('on');$('sheetMask').classList.add('on');S.sheetSeat=-1;
+}
+function sheetAction(op){
+  var i=S.sheetSeat;
+  if(op==='close'){closeSheet();return;}
+  if(op==='report'){closeSheet();show('report');return;}
+  if(op==='view'){toast('临时身份：'+S.seats[i]+' · 不与任何真实身份绑定');return;}
+  if(!can('mute')){toast('仅房主 / 管理员可执行该操作');return;}
+  if(op==='mute'){send({type:'op',action:'mute',seat:i});toast('已切换该麦位静音状态');}
+  if(op==='ban'){
+    send({type:'op',action:'ban',seat:i});toast('已切换禁言状态 · 仅本次房间');
+  }
+  if(op==='down'||op==='kick'){send({type:'op',action:op,seat:i});toast(op==='kick'?'已踢出房间':'已请 TA 下麦');}
+  if(op==='transfer'){
+    if(S.role!=='owner'){toast('只有房主可以转让房主');return;}
+    send({type:'op',action:'transfer',seat:i});toast('已把房主转让给 '+S.seats[i]);closeSheet();return;
+  }
+  if(op==='allmute'){send({type:'op',action:'allmute'});toast('全员静音 · 仅本次房间有效');}
+  if(op==='alldown'){send({type:'op',action:'alldown'});toast('全员下麦 · 麦位已清空');}
+  if(op==='lock'){send({type:'op',action:'lock'});toast(S.locked?'麦位锁定已解除':'麦位已锁定 · 上麦需举手');}
+  if(op==='visibility'){
+    send({type:'op',action:'visibility'});
+    roomHead();toast('可见性已改为：'+(S.visibility==='public'?'公开':S.visibility==='code'?'仅凭房号':'隐身房间'));
+  }
+  if(op==='ghostlist'){send({type:'op',action:'ghostlist'});toast('已请出全部隐身听众');}
+  if(op==='banall'){send({type:'op',action:'banall'});toast('已禁止全员文字发言');}
+  if(op==='closeRoom'){
+    if(!S.closeArmed){S.closeArmed=true;var btn=$('closeRoomBtn');if(btn){btn.textContent='确认关闭房间（不可撤销）';btn.style.background='#4A2038';}toast('再次点击「确认关闭房间」立即销毁');return;}
+    closeSheet();send({type:'close'});return;
+  }
+  renderSeats();renderMessages();updateStat();
+  if(S.sheetSeat>=0)closeSheet();
+}
+function seatClick(i){
+  if(S.ghost){toast('隐身状态不可上麦');return;}
+  if(S.locked&&!S.seats[i]){toast('麦位已锁定 · 请先举手');return;}
+  if(i===S.mySeat){send({type:'seat',index:i});S.mySeat=-1;S.micOn=false;stopMic();toast('已下麦');}
+  else if(!S.seats[i]){
+    send({type:'seat',index:i});toast('已上麦 · 点麦克风开麦');
+  }else{openSheet(i);return;}
+  renderSeats();updateStat();return;
+}
+function setSeg(box,attr,val){var bs=document.querySelectorAll('#'+box+' button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('sel',bs[i].getAttribute('data-'+attr)===val);}
+function openCreate(){
+  CREATE.id=rid();CREATE.vis='public';CREATE.hand='free';
+  $('newRoomId').textContent=CREATE.id;$('newOwner').textContent=S.nick;$('newRoomName').value='';
+  setSeg('visSeg','vis','public');setSeg('handSeg','hand','free');$('createDlg').classList.add('on');
+}
+function doCreate(){
+  var name=$('newRoomName').value.trim()||(S.nick+'的房间');
+  $('createDlg').classList.remove('on');
+  if(!send({type:'create',name:name,visibility:CREATE.vis,locked:CREATE.hand==='ask',ghost:false,create:true}))toast('实时连接未就绪');
+}
+function syncSwitches(){
+  $('ghostSw').classList.toggle('on',S.ghostWanted);$('ghostSw').querySelector('.box').textContent=S.ghostWanted?'✓':'';
+  $('adminSw').classList.toggle('on',S.adminWanted);$('adminSw').querySelector('.box').textContent=S.adminWanted?'✓':'';
+}
+
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-go]');
+  if(el){if(el.getAttribute('data-go')==='policy'&&$('consent').classList.contains('on'))$('consent').classList.remove('on');show(el.getAttribute('data-go'));return;}
+  var rc=e.target.closest('[data-room]');
+  if(rc){
+    if(!S.agreed){$('consent').classList.add('on');return;}
+  var room=NETROOMS[parseInt(rc.getAttribute('data-room'),10)];
+    if(!room){toast('房间列表未就绪');return;}
+    if(!send({type:'join',roomId:room.id||room[3],name:S.nick,ghost:S.ghostWanted,create:false}))toast('实时连接未就绪');
+    return;
+  }
+  var st=e.target.closest('[data-seat]');if(st){seatClick(parseInt(st.getAttribute('data-seat'),10));return;}
+  var op=e.target.closest('[data-op]');if(op){sheetAction(op.getAttribute('data-op'));return;}
+  var ch=e.target.closest('[data-reason]');if(ch){S.reason=REASONS[parseInt(ch.getAttribute('data-reason'),10)];renderChips();return;}
+  var vs=e.target.closest('[data-vis]');if(vs){CREATE.vis=vs.getAttribute('data-vis');setSeg('visSeg','vis',CREATE.vis);return;}
+  var hs=e.target.closest('[data-hand]');if(hs){CREATE.hand=hs.getAttribute('data-hand');setSeg('handSeg','hand',CREATE.hand);return;}
+  if(e.target.id==='toolManage'){openTools();return;}
+  if(e.target.id==='toolClose'){
+    if(!(S.role==='owner'||S.role==='admin')){toast('仅房主 / 管理员可关闭房间');return;}
+    openTools();var b=$('closeRoomBtn');if(b){b.textContent='确认关闭房间（不可撤销）';b.style.background='#4A2038';}S.closeArmed=true;return;
+  }
+});
+
+$('reroll').onclick=function(){S.nick=randomName();$('nick').textContent=S.nick;updateStat();toast('已换一个临时名字');};
+$('ghostSw').onclick=function(){S.ghostWanted=!S.ghostWanted;syncSwitches();toast(S.ghostWanted?'下次进房将隐身收听':'已取消隐身进房');};
+$('adminSw').onclick=function(){
+  S.adminWanted=!S.adminWanted;syncSwitches();send({type:'admin',admin:S.adminWanted});
+  if(S.joined){S.role=S.adminWanted?'admin':'visitor';roomHead();renderTools();renderSeats();updateStat();}
+  toast(S.adminWanted?'管理员权限已开启 · 仅本次会话有效':'管理员权限已关闭');
+};
+$('enter').onclick=function(){
+  if(!S.agreed){$('consent').classList.add('on');return;}
+  if(!NETROOMS.length){toast('实时房间列表未就绪');return;}
+  if(!send({type:'join',roomId:NETROOMS[0].id,name:S.nick,ghost:S.ghostWanted,create:false}))toast('实时连接未就绪');
+};
+$('createBtn').onclick=function(){if(!S.agreed){S.pendingCreate=true;$('consent').classList.add('on');return;}openCreate();};
+$('agree').onclick=function(){S.agreed=true;$('consent').classList.remove('on');if(S.pendingCreate){S.pendingCreate=false;openCreate();}else{$('enter').click();}};
+$('justLook').onclick=function(){S.pendingCreate=false;$('consent').classList.remove('on');toast('未同意 · 再次点主按钮可重新唤起');};
+$('consent').onclick=function(e){if(e.target===this){S.pendingCreate=false;this.classList.remove('on');}};
+$('confirmCreate').onclick=doCreate;
+$('cancelCreate').onclick=function(){$('createDlg').classList.remove('on');};
+$('createDlg').onclick=function(e){if(e.target===this)this.classList.remove('on');};
+$('newRoomId').onclick=function(){CREATE.id=rid();this.textContent=CREATE.id;toast('已重新生成房号');};
+$('sheetMask').onclick=closeSheet;
+$('roomBack').onclick=leaveRoom;$('roomExit').onclick=leaveRoom;$('leaveBtn').onclick=leaveRoom;
+$('micBtn').onclick=toggleMic;
+$('handBtn').onclick=function(){S.hand=!S.hand;send({type:'hand',hand:S.hand});toast(S.hand?'已举手 · 房主可见':'已取消举手');};
+$('manageBtn').onclick=openTools;
+$('modeBtn').onclick=function(){if(S.ghost){toast('隐身状态仅可收听');return;}if(S.network!=='ok'){toast('网络异常，暂时无法输入');return;}$('msgInput').focus();toast('文字与语音可同时开启');};
+$('sendBtn').onclick=sendChat;
+$('msgInput').addEventListener('input',updateSend);
+$('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sendChat();}});
+$('submitReport').onclick=function(){toast('举报已提交 · 仅记录理由与房间号，不关联昵称');};
+$('switchRoom').onclick=function(){leaveRoom();setTimeout(function(){if(S.agreed&&NETROOMS.length)send({type:'join',roomId:NETROOMS[0].id,name:S.nick,ghost:S.ghostWanted,create:false});},260);toast('已换房 · 新房间不继承任何身份');};
+$('blockUser').onclick=function(){toast('已屏蔽该用户 · 仅本次房间有效');};
+
+function syncNetworkStatus(){
+  var online=navigator.onLine;
+  S.network=online?'ok':'bad';
+  $('netbar').classList.toggle('on',!online);
+  if(!online&&musicAudio&&!musicAudio.paused){music.wanted=false;musicAudio.pause();}
+  renderSeats();updateSend();musicRender();
+}
+window.addEventListener('online',function(){syncNetworkStatus();toast('网络连接已恢复 · 断线期间内容不外带');});
+window.addEventListener('offline',function(){syncNetworkStatus();toast('网络已断开 · 消息与音乐暂停');});
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden&&musicAudio&&!musicAudio.paused)return;
+});
+
+$('nick').textContent=S.nick;
+initMusic();initSocket();syncNetworkStatus();
+renderRooms();renderSeats();renderMessages();renderChips();updateSend();syncSwitches();drawWave();updateStat();
+})();
+</script>
+</body>
+</html>
