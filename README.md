@@ -1,5 +1,7 @@
 # 觅声 MISOUND
 
+语言 / Languages: [简体中文](README.md) · [English](README.en.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [Русский](README.ru.md) · [Español](README.es.md)
+
 觅声是一个匿名文字聊天房网站，支持实时房间、8 个麦位状态、房主管理、在线电台同步和本地音量控制。当前版本使用 Node.js 标准库实现 HTTP、HTTPS、静态文件服务和 WebSocket，无需数据库或第三方运行时依赖。
 
 ## 在线地址
